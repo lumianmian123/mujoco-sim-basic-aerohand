@@ -1,0 +1,11 @@
+# Local MuJoCo model assets from TetherIA aero-open-sim.
+# These files are intentionally not redistributed by this tutorial package.
+/assets/*.STL
+/assets/*.stl
+/assets/*.obj
+/assets/*.xml
+
+# Python runtime artifacts.
+__pycache__/
+*.py[cod]
+

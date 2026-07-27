@@ -140,21 +140,70 @@ If you see a progress bar such as `250/250`, that is the rendering progress, not
 
 This tutorial does not train a new policy. It only loads an existing policy and runs inference.
 
-## 7. Simple Principle
+## 7. What The Simulation Environment Does
 
-The policy is a PPO neural network trained on observations from the cube-rotation environment.
+`AeroCubeRotateZAxis` is the task environment used to train and play this policy. It wraps the MuJoCo/MJX physics model into a reinforcement-learning interface:
 
-At each simulation step:
+```mermaid
+flowchart LR
+    A["Reset AeroCubeRotateZAxis env"] --> B["Read observation"]
+    B --> C["PPO policy inference"]
+    C --> D["7D action"]
+    D --> E["Apply action to AEROHAND actuators"]
+    E --> F["MuJoCo / MJX physics step"]
+    F --> G{"Episode done?"}
+    G -- "No" --> B
+    G -- "Yes or max steps" --> H["Render rollout frames"]
+    H --> I["Write mp4 video"]
+```
 
-1. The environment provides an observation, including tendon/joint sensor information and the previous action.
-2. The PPO policy maps that observation to a 7-dimensional action.
-3. The environment applies the action to the AEROHAND tendon/joint actuators.
-4. MuJoCo/MJX steps the physics.
-5. The final rollout is rendered as a video.
+At a high level, the environment does five things:
+
+1. Loads the MuJoCo scene with the AEROHAND right hand, cube, floor, contacts, tendon actuators, and sensors.
+2. Resets the hand and cube state at the start of each episode.
+3. Builds the policy observation from simulated tendon/joint sensors and the previous action.
+4. Applies the policy's 7-dimensional action to the AEROHAND tendon/joint actuators.
+5. Steps MuJoCo/MJX physics, checks termination, and records states for rendering.
+
+The tendon length sensors do not require external hardware in simulation. They are virtual MuJoCo sensors defined in the XML model, such as tendon-position sensors for the fingers and thumb tendons. MuJoCo reads them directly from the simulated model state.
+
+The policy is a PPO neural network trained on these environment observations. During playback, it runs closed-loop inference:
+
+```text
+observation -> PPO policy -> 7D action -> MuJoCo actuators -> physics step -> next observation
+```
+
+## 8. Simulation vs Real Hardware
+
+The simulation loop and real-hardware deployment have similar control logic, but the source of feedback and the meaning of `step` are different.
+
+In MuJoCo simulation:
+
+1. Status feedback comes from MuJoCo/MJX simulated state and XML-defined sensors.
+2. `env.step(action)` writes the action to simulated actuators and advances physics by a fixed time step.
+3. The cube state, contacts, tendon lengths, joint position, and hand motion are all computed by the simulator.
+4. `step` is a real API concept: one policy action advances the simulated world.
+
+On real hardware:
+
+1. Status feedback comes from the real hand's actuator feedback, such as motor position, speed, current, and temperature.
+2. There is usually no separate external tendon-length sensor. The deployment code maps actuator feedback into tendon-like observations for the policy.
+3. The policy action is converted into actuator commands and sent to the real motors.
+4. The real world advances continuously; there is no MuJoCo-style physics `env.step()`.
+5. The closest equivalent of a step is one control-loop tick, for example a ROS timer callback every `0.05s`.
+
+So the correspondence is:
+
+```text
+MuJoCo sensor data        <-> real actuator feedback mapped to policy observation
+MuJoCo data.ctrl          <-> real actuator command
+MuJoCo env.step(action)   <-> real time passing while motors execute the command
+MuJoCo policy step        <-> one ROS/control-loop tick
+```
 
 This is closed-loop simulation inference. It is not real-time ROS2 deployment and does not communicate with physical hardware.
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 If 10 steps runs but 500 steps is slow, it is usually rendering or first-run JAX compilation. Try:
 

@@ -25,7 +25,7 @@ def main() -> None:
         hand.set_actuations(actuations)
         hand.step(5)
         viewer.sync()
-        time.sleep(0.5)
+        time.sleep(0.1)
 
       for t in range(101):
         alpha = t / 100.0
@@ -36,7 +36,7 @@ def main() -> None:
         hand.set_actuations(actuations)
         hand.step(5)
         viewer.sync()
-        time.sleep(0.5)
+        time.sleep(0.1)
 
 
 if __name__ == "__main__":

@@ -68,6 +68,14 @@ def sim_to_actuation_reverse(
   return min_u + t * (max_u - min_u)
 
 
+def actuation_to_sim_reverse(
+        u: float, lo: float, hi: float, min_u: float, max_u: float
+) -> float:
+    u = _clamp(u, min_u, max_u)
+    t = (u - min_u) / (max_u - min_u)
+    return hi + t * (lo - hi)
+
+
 def sim_to_actuation_thumb_mcp(
     sim_abd_joint: float, sim_flex_tendon: float, sim_mcp_tendon: float
 ) -> tuple[float, float, float]:
@@ -129,28 +137,28 @@ def actuation_array_to_sim_array(actuation_arr: list[float]) -> list[float]:
       actuation_arr[THUMB_MCP_ACTUATION], sim_arr[THUMB_ABD_SIM]
   )
 
-  sim_arr[FINGER_IDX_SIM] = sim_to_actuation_reverse(
+  sim_arr[FINGER_IDX_SIM] = actuation_to_sim_reverse(
       actuation_arr[FINGER_IDX_ACTUATION],
       SIM_RANGE[FINGER_IDX_SIM][0],
       SIM_RANGE[FINGER_IDX_SIM][1],
       ACTUATION_RANGE[FINGER_IDX_ACTUATION][0],
       ACTUATION_RANGE[FINGER_IDX_ACTUATION][1],
   )
-  sim_arr[FINGER_MIDDLE_SIM] = sim_to_actuation_reverse(
+  sim_arr[FINGER_MIDDLE_SIM] = actuation_to_sim_reverse(
       actuation_arr[FINGER_MIDDLE_ACTUATION],
       SIM_RANGE[FINGER_MIDDLE_SIM][0],
       SIM_RANGE[FINGER_MIDDLE_SIM][1],
       ACTUATION_RANGE[FINGER_MIDDLE_ACTUATION][0],
       ACTUATION_RANGE[FINGER_MIDDLE_ACTUATION][1],
   )
-  sim_arr[FINGER_RING_SIM] = sim_to_actuation_reverse(
+  sim_arr[FINGER_RING_SIM] = actuation_to_sim_reverse(
       actuation_arr[FINGER_RING_ACTUATION],
       SIM_RANGE[FINGER_RING_SIM][0],
       SIM_RANGE[FINGER_RING_SIM][1],
       ACTUATION_RANGE[FINGER_RING_ACTUATION][0],
       ACTUATION_RANGE[FINGER_RING_ACTUATION][1],
   )
-  sim_arr[FINGER_PINKY_SIM] = sim_to_actuation_reverse(
+  sim_arr[FINGER_PINKY_SIM] = actuation_to_sim_reverse(
       actuation_arr[FINGER_PINKY_ACTUATION],
       SIM_RANGE[FINGER_PINKY_SIM][0],
       SIM_RANGE[FINGER_PINKY_SIM][1],
